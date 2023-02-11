@@ -1,0 +1,35 @@
+{
+  "name": "laradiodugaming-client",
+  "version": "1.0.0",
+  "description": "Le client officiel de LaRADIOdugaming.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build"
+  },
+  "keywords": [],
+  "author": "Creeper",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^23.0.0",
+    "electron-builder": "^23.6.0"
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1"
+  },
+  "build": {
+    "appId": "xyz.lsdg.radio-client",
+    "productName": "LaRADIOdugaming Client",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "deleteAppDataOnUninstall": true,
+      "shortcutName": "LaRADIOdugaming Client",
+      "oneClick": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}
