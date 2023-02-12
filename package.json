@@ -1,6 +1,6 @@
 {
   "name": "laradiodugaming-client",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Le client officiel de LaRADIOdugaming.",
   "main": "src/index.js",
   "scripts": {
@@ -15,7 +15,8 @@
     "electron-builder": "^23.6.0"
   },
   "dependencies": {
-    "discord-rpc": "^4.0.1"
+    "discord-rpc": "^4.0.1",
+    "dotenv": "^16.0.3"
   },
   "build": {
     "appId": "xyz.lsdg.radio-client",
@@ -30,6 +31,15 @@
       "allowElevation": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
-    }
+    },
+    "extraFiles": [
+      {
+        "from": "src/assets",
+        "to": "resources",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }

@@ -26,15 +26,17 @@ async function setActivity() {
   const infos = await getTrackInfos()
   let now = Date.now()
 
-  console.log(infos)
-
   let activity = {
     details: "Écoute de la musique",
     state: `${infos.track.replace("\n", " - ")}`,
     largeImageKey: "large",
     largeImageText: `LaRADIOdugaming Client - v${version}`,
     smallImageKey: infos.status == "playing" ? "play_light" : "pause_light",
-    smallImageText: infos.status == "playing" ? "En cours de lecture" : "En pause"
+    smallImageText: infos.status == "playing" ? "En cours de lecture" : "En pause",
+    buttons: [{
+      label: "Écouter",
+      url: `https://radio.lsdg.xyz/listen?m=${infos.id}`
+    }]
   }
 
   if (infos.status == "playing") {
@@ -55,7 +57,8 @@ q = {
     n: parseInt(document.querySelector('.current-time').dataset.currenttime),
     f: parseInt(document.querySelector('.total-duration').dataset.duration)
   },
-  status: document.querySelector('.fa-play-circle') ? "paused" : "playing"
+  status: document.querySelector('.fa-play-circle') ? "paused" : "playing",
+  id: parseInt(params.get("m"))
 }
 q
   `)
