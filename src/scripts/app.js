@@ -76,5 +76,5 @@ rpc.login({ clientId }).then(() => console.log("Logged in")).catch(console.error
 
 setInterval(async () => {
   const title = await app.executeJavaScript(`document.title`)
-  document.title = `LaRADIOdugaming Client - ${title.replace(" | LaRADIOdugaming", "").trim()}`
+  document.title = `${title.replace("| LaRADIOdugaming", "- LaRADIOdugaming Client").trim()}`
 }, 1000)
