@@ -31,15 +31,15 @@ async function setActivity() {
     state: `${infos.track.replace("\n", " - ")}`,
     largeImageKey: "large",
     largeImageText: `LaRADIOdugaming Client - v${version}`,
-    smallImageKey: infos.status == "playing" ? "play_light" : "pause_light",
-    smallImageText: infos.status == "playing" ? "En cours de lecture" : "En pause",
+    smallImageKey: infos.status == "loop" ? "loop_light" : (infos.status == "playing" ? "play_light" : "pause_light"),
+    smallImageText: infos.status == "loop" ? "Lecture en boucle" : (infos.status == "playing" ? "En cours de lecture" : "En pause"),
     buttons: [{
       label: "Écouter",
       url: `https://radio.lsdg.xyz/listen?m=${infos.id}`
     }]
   }
 
-  if (infos.status == "playing") {
+  if (infos.status != "paused") {
     activity.startTimestamp = now - infos.timestamps.n
     activity.endTimestamp = now - infos.timestamps.n + infos.timestamps.f
   }
@@ -52,13 +52,13 @@ async function setActivity() {
 async function getTrackInfos() {
   return await app.executeJavaScript(`
 q = {
+  id: parseInt(params.get("m")),
   track: document.getElementById("track-fullname").innerText,
   timestamps: {
     n: parseInt(document.querySelector('.current-time').dataset.currenttime),
     f: parseInt(document.querySelector('.total-duration').dataset.duration)
   },
-  status: document.querySelector('.fa-play-circle') ? "paused" : "playing",
-  id: parseInt(params.get("m"))
+  status: document.querySelector('.fa-play-circle') ? "paused" : (document.querySelector(".loop-track").classList.contains("active") ? "loop" : "playing")
 }
 q
   `)
