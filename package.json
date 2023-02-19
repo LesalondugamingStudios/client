@@ -17,6 +17,7 @@
   "dependencies": {
     "discord-rpc": "^4.0.1",
     "dotenv": "^16.0.3",
+    "electron-log": "^5.0.0-beta.16",
     "electron-updater": "^5.3.0"
   },
   "build": {
@@ -24,7 +25,9 @@
     "productName": "LaRADIOdugaming Client",
     "win": {
       "target": "nsis",
-      "publish": ["github"]
+      "publish": [
+        "github"
+      ]
     },
     "nsis": {
       "deleteAppDataOnUninstall": true,
@@ -34,11 +37,13 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
     },
-    "publish": [{
-      "provider": "github",
-      "owner": "LesalondugamingStudios",
-      "repo": "client"
-    }],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "LesalondugamingStudios",
+        "repo": "client"
+      }
+    ],
     "extraFiles": [
       {
         "from": "src/assets",

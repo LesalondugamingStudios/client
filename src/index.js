@@ -1,8 +1,12 @@
 const { app, BrowserWindow, Menu, shell, Tray, ipcMain } = require('electron')
+const log = require("electron-log")
 const { autoUpdater } = require("electron-updater")
 const path = require("path")
 const { version } = require("../package.json")
 require("dotenv").config()
+
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
 
 /**
  * @type {BrowserWindow | undefined}
@@ -45,8 +49,11 @@ async function createWindow() {
   tray.on("click", () => mainWindow.show())
 }
 
+app.on("ready", () => {
+  autoUpdater.checkForUpdatesAndNotify()
+})
+
 app.whenReady().then(async () => {
-  await autoUpdater.checkForUpdatesAndNotify()
   createWindow()
 
   app.on('activate', function () {
