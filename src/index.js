@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Menu, shell, Tray, ipcMain } = require('electron')
+const { autoUpdater } = require("electron-updater")
 const path = require("path")
 const { version } = require("../package.json")
 require("dotenv").config()
@@ -44,7 +45,8 @@ async function createWindow() {
   tray.on("click", () => mainWindow.show())
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await autoUpdater.checkForUpdatesAndNotify()
   createWindow()
 
   app.on('activate', function () {
