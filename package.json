@@ -1,6 +1,6 @@
 {
   "name": "laradiodugaming-client",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Le client officiel de LaRADIOdugaming.",
   "main": "src/index.js",
   "scripts": {
@@ -11,7 +11,7 @@
   "author": "Creeper",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^23.0.0",
+    "electron": "^23.1.0",
     "electron-builder": "^23.6.0"
   },
   "dependencies": {
