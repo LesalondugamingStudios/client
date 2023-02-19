@@ -58,7 +58,7 @@ async function setActivity() {
 async function getTrackInfos() {
   return await app.executeJavaScript(`
 q = {
-  id: parseInt(params.get("m")),
+  id: parseInt(new URLSearchParams(location.search).get("m")),
   track: document.getElementById("track-fullname").innerText,
   timestamps: {
     n: parseInt(document.querySelector('.current-time').dataset.currenttime),
