@@ -1,10 +1,15 @@
-const { app, BrowserWindow, Menu, shell, Tray } = require('electron')
+const { app, BrowserWindow, Menu, shell, Tray, ipcMain } = require('electron')
 const path = require("path")
 const { version } = require("../package.json")
 require("dotenv").config()
 
+/**
+ * @type {BrowserWindow | undefined}
+ */
+let mainWindow
+
 async function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -13,8 +18,7 @@ async function createWindow() {
   })
 
   if(process.env.DEV) mainWindow.setIcon("./src/assets/icon.png")
-
-  mainWindow.removeMenu()
+  if(!process.env.DEV) mainWindow.removeMenu()
 
   await mainWindow.loadFile("./src/html/index.html")
 
@@ -46,6 +50,17 @@ app.whenReady().then(() => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+ipcMain.on('setSoundControls', (event, args) => {
+  for(let arg of args) {
+    arg.icon = path.join(process.env.DEV ? "./src/assets/" : process.resourcesPath, arg.icon)
+    arg.click = function() {
+      mainWindow.webContents.send("soundControl", `${arg.c}`)
+      return true
+    }
+  }
+  mainWindow.setThumbarButtons(args)
 })
 
 app.on('window-all-closed', function () {

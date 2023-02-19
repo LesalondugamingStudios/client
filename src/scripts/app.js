@@ -1,4 +1,8 @@
+let CONTROLSENABLED = false
+let CONTROLISPLAYING = false
+
 const DiscordRPC = require("discord-rpc")
+const { ipcRenderer } = require("electron")
 const { version } = require("../../package.json")
 
 const main = document.getElementById('main');
@@ -12,16 +16,18 @@ main.appendChild(app)
 const clientId = '767777944096604241'
 const rpc = new DiscordRPC.Client({ transport: 'ipc' })
 
+const theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? "light" : "dark"
+
 async function setActivity() {
   if (!rpc) {
     return;
   }
 
   let url = app.getAttribute("src")
-  if(url.startsWith("https://discord")) return rpc.clearActivity()
+  if(url.startsWith("https://discord")) return reset()
   
   let path = "/" + url.split("/").slice(3).join("/")
-  if(!path.startsWith("/listen")) return rpc.clearActivity()
+  if(!path.startsWith("/listen")) return reset()
 
   const infos = await getTrackInfos()
   let now = Date.now()
@@ -64,6 +70,22 @@ q
   `)
 }
 
+async function getStatus() {
+  return await app.executeJavaScript(`
+q = {
+  isLoop: document.querySelector(".loop-track").classList.contains("active"),
+  isPlaying: !document.querySelector('.fa-play-circle')
+}
+q
+`)
+}
+
+function reset() {
+  CONTROLSENABLED = false
+  rpc.clearActivity()
+  ipcRenderer.send('setSoundControls', [])
+}
+
 rpc.on('ready', () => {
   setActivity();
 
@@ -74,7 +96,41 @@ rpc.on('ready', () => {
 
 rpc.login({ clientId }).then(() => console.log("Logged in")).catch(console.error)
 
+ipcRenderer.on('soundControl', (event, arg) => {
+  console.log(`Received soundControl ${arg}`)
+  switch(arg) {
+    case "backward":
+      app.executeJavaScript(`$(".prev-track").click(); true`)
+      break
+    case "play":
+    case "pause":
+      app.executeJavaScript(`$(".playpause-track").click(); true`)
+      break
+    case "forward":
+      app.executeJavaScript(`$(".next-track").click(); true`)
+      break
+  }
+
+  return true
+})
+
 setInterval(async () => {
   const title = await app.executeJavaScript(`document.title`)
   document.title = `${title.replace("| LaRADIOdugaming", "- LaRADIOdugaming Client").trim()}`
-}, 1000)
+
+  let url = app.getAttribute("src")
+  if(url.startsWith("https://discord")) return reset()
+  
+  let path = "/" + url.split("/").slice(3).join("/")
+  if(!path.startsWith("/listen")) return reset()
+
+  const infos = await getStatus()
+  if(CONTROLSENABLED && CONTROLISPLAYING == infos.isPlaying) return
+  CONTROLSENABLED = true
+  CONTROLISPLAYING = infos.isPlaying
+  ipcRenderer.send('setSoundControls', [
+    { icon: `backward_${theme}.png`, c: "backward" },
+    { icon: `${infos.isPlaying ? "pause" : "play"}_${theme}.png`, c: infos.isPlaying ? "pause" : "play" },
+    { icon: `forward_${theme}.png`, c: "forward" },
+  ])
+}, 500)

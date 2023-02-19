@@ -1,6 +1,6 @@
 {
   "name": "laradiodugaming-client",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Le client officiel de LaRADIOdugaming.",
   "main": "src/index.js",
   "scripts": {
