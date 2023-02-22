@@ -40,7 +40,7 @@ async function createWindow() {
       await shell.openExternal("https://radio.lsdg.xyz/")
     } },
     { type: "separator" },
-    { label: "Quitter LaRADIOdugaming Client", click: () => app.quit() }
+    { label: "Quitter", click: () => app.quit() }
   ])
 
   const tray = new Tray(process.env.DEV ? "./src/assets/icon.png" : path.join(process.resourcesPath, "icon.png"))
