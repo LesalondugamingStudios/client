@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, Tray, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, shell, Tray, ipcMain, globalShortcut } = require('electron')
 const log = require("electron-log")
 const { autoUpdater } = require("electron-updater")
 const path = require("path")
@@ -6,7 +6,6 @@ const { version } = require("../package.json")
 require("dotenv").config()
 
 autoUpdater.logger = log;
-autoUpdater.logger.transports.file.level = 'info';
 
 /**
  * @type {BrowserWindow | undefined}
@@ -49,31 +48,46 @@ async function createWindow() {
   tray.on("click", () => mainWindow.show())
 }
 
-app.on("ready", () => {
-  autoUpdater.checkForUpdatesAndNotify()
-})
-
-app.whenReady().then(async () => {
-  createWindow()
-
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+const singleInstanceLock = app.requestSingleInstanceLock();
+if (!singleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if(mainWindow) mainWindow.show()
   })
-})
 
-ipcMain.on('setSoundControls', (event, args) => {
-  for(let arg of args) {
-    arg.icon = path.join(process.env.DEV ? "./src/assets/" : process.resourcesPath, arg.icon)
-    arg.click = function() {
-      mainWindow.webContents.send("soundControl", `${arg.c}`)
-      return true
+  app.on("ready", () => {
+    autoUpdater.checkForUpdatesAndNotify()
+  })
+  
+  app.whenReady().then(async () => {
+    if(!process.env.DEV) {
+      globalShortcut.register('CommandOrControl+R', () => {
+        if(mainWindow) mainWindow.reload()
+      })
     }
-  }
-  mainWindow.setThumbarButtons(args)
-})
 
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
-})
-
-app.on('before-quit', () => app.quitting = true)
+    createWindow()
+  
+    app.on('activate', function () {
+      if(BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+  
+  ipcMain.on('setSoundControls', (event, args) => {
+    for(let arg of args) {
+      arg.icon = path.join(process.env.DEV ? "./src/assets/" : process.resourcesPath, arg.icon)
+      arg.click = function() {
+        mainWindow.webContents.send("soundControl", `${arg.c}`)
+        return true
+      }
+    }
+    mainWindow.setThumbarButtons(args)
+  })
+  
+  app.on('window-all-closed', function () {
+    if(process.platform !== 'darwin') app.quit()
+  })
+  
+  app.on('before-quit', () => app.quitting = true)
+}
