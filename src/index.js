@@ -49,7 +49,7 @@ async function createWindow() {
 }
 
 const singleInstanceLock = app.requestSingleInstanceLock();
-if (!singleInstanceLock) {
+if (!singleInstanceLock && !process.env.DEV) {
   app.quit();
 } else {
   app.on('second-instance', () => {
@@ -61,12 +61,6 @@ if (!singleInstanceLock) {
   })
   
   app.whenReady().then(async () => {
-    if(!process.env.DEV) {
-      globalShortcut.register('CommandOrControl+R', () => {
-        if(mainWindow) mainWindow.reload()
-      })
-    }
-
     createWindow()
   
     app.on('activate', function () {
@@ -83,6 +77,16 @@ if (!singleInstanceLock) {
       }
     }
     mainWindow.setThumbarButtons(args)
+  })
+
+  app.on('web-contents-created', (webContentsCreatedEvent, webContents) => {
+    webContents.on('before-input-event', (beforeInputEvent, input) => {
+      const { code, alt, control, meta } = input
+      // Shortcut: toggle devTools
+      if (!process.env.DEV && control && !alt && !meta && code === 'KeyR') {
+        BrowserWindow.getFocusedWindow().reload()
+      }
+    })
   })
   
   app.on('window-all-closed', function () {
