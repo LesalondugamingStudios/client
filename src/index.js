@@ -1,9 +1,15 @@
-const { app, BrowserWindow, Menu, shell, Tray, ipcMain, globalShortcut } = require('electron')
+const { app, BrowserWindow, Menu, shell, Tray, ipcMain } = require('electron')
 const log = require("electron-log")
 const { autoUpdater } = require("electron-updater")
+const express = require("express")
 const path = require("path")
 const { version } = require("../package.json")
+const { default: fetch } = require('node-fetch')
+const { RadioAPI } = require('./api')
 require("dotenv").config()
+
+const expressApp = express()
+const api = new RadioAPI()
 
 autoUpdater.logger = log;
 
@@ -12,12 +18,25 @@ autoUpdater.logger = log;
  */
 let mainWindow
 
+/**
+ * Session Cookie de la radio
+ */
+let sessionID = ""
+
 async function createWindow() {
   mainWindow = new BrowserWindow({
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
       webviewTag: true
+    },
+    minWidth: 800,
+    minHeight: 600,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#181818',
+      symbolColor: '#ffffff',
+      height: 35
     }
   })
 
@@ -79,10 +98,19 @@ if (!singleInstanceLock && !process.env.DEV) {
     mainWindow.setThumbarButtons(args)
   })
 
+  ipcMain.handle("login", (event) => {
+    return sessionID
+  })
+
+  ipcMain.handle("api", async (event, args) => {
+    if(!api[args]) return false
+    if(!sessionID) return false
+    return await api[args](sessionID)
+  })
+
   app.on('web-contents-created', (webContentsCreatedEvent, webContents) => {
     webContents.on('before-input-event', (beforeInputEvent, input) => {
       const { code, alt, control, meta } = input
-      // Shortcut: toggle devTools
       if (!process.env.DEV && control && !alt && !meta && code === 'KeyR') {
         BrowserWindow.getFocusedWindow().reload()
       }
@@ -94,4 +122,30 @@ if (!singleInstanceLock && !process.env.DEV) {
   })
   
   app.on('before-quit', () => app.quitting = true)
+
+  expressApp.get("/", async (req, res) => {
+    if(sessionID) return res.status(400).send({ code: 400, message: "Déjà connecté" })
+
+    const { id, accessToken, expiresIn } = req.query
+    if(!accessToken) return res.sendFile(path.join(__dirname, "./html/login.html"))
+
+    let response = await fetch("https://radio.lsdg.xyz/api/v1/authorize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, deviceType: "windowsApp", accessToken, expirationDate: new Date(Date.now() + (expiresIn * 1000) - 30000) })
+    })
+
+    let json = await response.json()
+
+    if(!response.ok) return res.status(response.status).send({ code: response.status, message: json.message })
+
+    if(!json.authorization) return res.status(500).send({ code: 500, message: "Pas d'autorisation." })
+
+    sessionID = json.authorization
+    res.send({ ok: true })
+  })
+
+  expressApp.get("/ok", (req, res) => res.send(`<style>body{font-family: "Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";color: #ffffff;}</style><br><br><br><br><center><h1>Connexion en cours, vous allez être redirigé ...</h1></center>`))
+
+  expressApp.listen(62452)
 }

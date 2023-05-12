@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>LaRADIOdugaming Login</title>
+	<style>body{font-family: "Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";color: #ffffff;}</style>
+</head>
+<body>
+	<br><br><br><br>
+	<center>
+		<h1>Connexion à Discord</h1>
+		<a id="login" style="display: none;" href="https://discord.com/oauth2/authorize?response_type=token&redirect_uri=http%3A%2F%2Flocalhost%3A62452%2F&scope=identify%20guilds&client_id=771133613504462858&prompt=none">Identifie toi</a>
+		<p id="error"></p>
+	</center>
+	<script>
+		function generateRandomString() {
+			let randomString = '';
+			const randomNumber = Math.floor(Math.random() * 10);
+
+			for (let i = 0; i < 20 + randomNumber; i++) {
+				randomString += String.fromCharCode(33 + Math.floor(Math.random() * 94));
+			}
+
+			return randomString;
+		}
+
+		window.onload = async () => {
+			const fragment = new URLSearchParams(window.location.hash.slice(1));
+			const [accessToken, tokenType, state, expiresIn] = [fragment.get('access_token'), fragment.get('token_type'), fragment.get('state'), fragment.get("expires_in")];
+
+			if (!accessToken) {
+				const randomString = generateRandomString();
+				localStorage.setItem('oauth-state', randomString);
+
+				document.getElementById('login').href += `&state=${encodeURIComponent(btoa(randomString))}`;
+				return document.getElementById('login').style.display = 'block';
+			}
+
+			if (localStorage.getItem('oauth-state') !== atob(decodeURIComponent(state))) {
+				return console.log('You may have been click-jacked!');
+			}
+
+			let result = await fetch('https://discord.com/api/users/@me', {
+				headers: {
+					authorization: `${tokenType} ${accessToken}`,
+				},
+			})
+			let response = await result.json()
+
+			console.log(response)
+
+      let q = await fetch(`http://localhost:62452/?id=${response.id}&accessToken=${accessToken}&expiresIn=${expiresIn}`)
+			let j = await q.json()
+
+			console.log(j)
+
+			if(!q.ok) return document.getElementById("error").innerHTML = `ERREUR ${q.status} ${q.statusText} - ${j.message || "Aucune information"}` 
+			window.location.replace("http://localhost:62452/ok")
+		}
+	</script>
+</body>
+</html>

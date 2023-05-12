@@ -3,10 +3,48 @@
   <head>
     <meta charset="UTF-8">
     <title>LaRADIOdugaming Client</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.2.0/css/all.css">
     <link rel="stylesheet" href="../stylesheets/main.css">
+    <link rel="stylesheet" href="../stylesheets/loadingWheel.css">
   </head>
   <body>
+    <header class="drag-region"><span id="appname" class="intitule">LaRADIOdugaming</span> <span id="version" class="intitule"></span> <span id="title" class="intitule"></span></header>
+    <audio id="music" src="" controls hidden></audio>
     <div id="main"></div>
+    <footer>
+      <div id="musicDetails">
+        <img src="https://radio.lsdg.xyz/img/covers/" alt="Game Logo">
+        <span class="group-sup">
+          <span id="musicName">Music name</span>
+          <span id="artists">Artist</span>
+        </span>
+      </div>
+      <div id="controls" class="group-sup">
+        <span id="buttons">
+          <div id="repeat-track">
+            <i class="fa fa-arrows-rotate fa-1x"></i>
+          </div>
+          <div id="prev-track">
+            <i class="fa fa-step-backward fa-1x"></i>
+          </div>
+          <div id="playpause-track">
+            <i class="fa fa-play-circle fa-2x"></i>
+          </div>
+          <div id="next-track">
+            <i class="fa fa-step-forward fa-1x"></i>
+          </div>
+          <div id="loop-track">
+            <i class="fa fa-repeat fa-1x"></i>
+          </div>
+        </span>
+        <span id="playback">
+          <div class="current-time">00:00</div>
+          <input type="range" min="0" max="100" value="0" id="seekslide">
+          <div class="total-duration">00:00</div>
+        </span>
+      </div>
+    </footer>
 
     <script src="../scripts/app.js"></script>
   </body>

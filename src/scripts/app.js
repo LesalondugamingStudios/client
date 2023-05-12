@@ -1,136 +1,117 @@
-let CONTROLSENABLED = false
-let CONTROLISPLAYING = false
-
-const DiscordRPC = require("discord-rpc")
 const { ipcRenderer } = require("electron")
+const $ = require("jquery")
 const { version } = require("../../package.json")
 
-const main = document.getElementById('main');
-const app = document.createElement('webview');
+window.$ = $
+const url = "https://radio.lsdg.xyz/"
 
-app.setAttribute("id", "app")
-app.setAttribute("src", "https://radio.lsdg.xyz/")
+$("#version").html(version)
 
-main.appendChild(app)
+const loadingText = "<br><br><br><br><center><h1>Chargement du client en cours ...</h1><p>Fun fact : Si le client crash, Creeper n'en sera pas tenu responsable.</p></center>"
+let user
 
-const clientId = '767777944096604241'
-const rpc = new DiscordRPC.Client({ transport: 'ipc' })
+function setTitle(title) {
+  $("#title").html(title)
+}
 
-const theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? "light" : "dark"
+async function loadingScreen() {
+  $("#main").html(loadingText)
+  setTitle("Chargement du client")
+  await wait(1)
 
-async function setActivity() {
-  if (!rpc) {
-    return;
+  let res = await fetch(url + "api/v1/")
+  if(!res.ok) return $("#main").html(`<br><br><br><br><center><h1>Une erreur est survenue. Veuillez vous assurer d'être connecté à Internet et vérifiez si le site fonctionne correctement.</h1><p>${res.status} ${res.statusText}</p></center>`)
+  let content = await res.json()
+
+  if(content.deprecated) alert("Cette version du client est obselete.")
+
+  let loginData = await ipcRenderer.invoke("login")
+
+  console.log(loginData)
+
+  if(!loginData) {
+    setTitle("Connexion à Discord")
+    const login = document.createElement('webview');
+
+    login.setAttribute("id", "app")
+    login.setAttribute("src", "http://localhost:62452/")
+
+    $("#main").html(login)
+
+    let done = false
+    while(!done) {
+      await wait(2)
+      if(login.src.endsWith("/ok")) done = true
+    }
   }
 
-  let url = app.getAttribute("src")
-  if(url.startsWith("https://discord")) return reset()
+  user = await ipcRenderer.invoke("api", "getCurrentUser")
+  landingPage()
+}
+
+loadingScreen()
+
+function wait(sec) {
+  return new Promise(resolve => {
+    setTimeout(() => resolve(), sec * 1000)
+  })
+}
+
+function shuffle(array) {
+  let currentIndex = array.length;
+  while (currentIndex != 0) {
+    let randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+
+async function landingPage() {
+  setTitle("Accueil")
+
+  let franchises = shuffle(await ipcRenderer.invoke("api", "getFranchises")).slice(0, 10)
+  let holders = shuffle(await ipcRenderer.invoke("api", "getHolders")).slice(0, 10)
+  let filters = await ipcRenderer.invoke("api", "getFilters")
+
+  $("#main").html(`<div class="block">
+    <img class="avatar" src="${ user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512` : 'https://cdn.discordapp.com/embed/avatars/1.png' }" alt="avatar" />
+    <center><h3>Bienvenue, ${user.username}</h3></center>
+  </div><br>
   
-  let path = "/" + url.split("/").slice(3).join("/")
-  if(!path.startsWith("/listen")) return reset()
+  <div class="block">
+    <h1>Franchises</h1>
+    <div class="list">
+      ${franchises.map(f => renderItem(f, "franchise")).join("<br>")}
+    </div>
+  </div>
+    `)
+}
 
-  const infos = await getTrackInfos()
-  let now = Date.now()
+function renderItem(item, itemType) {
+  return `<div class="list_items">
+  <a class="${itemType}" data-id=${item.id}>
+    <img class="cover" src="${resolveImage(item, "cover")}" alt="Cover image of ${resolveName(item)}">
+    <p>${resolveName(item)}</p>
+  </a>
+</div>`
+}
 
-  let activity = {
-    details: "Écoute de la musique",
-    state: `${infos.track.replace("\n", " - ")}`,
-    largeImageKey: "large",
-    largeImageText: `LaRADIOdugaming Client - v${version}`,
-    smallImageKey: infos.status == "loop" ? "loop_light" : (infos.status == "playing" ? "play_light" : "pause_light"),
-    smallImageText: infos.status == "loop" ? "Lecture en boucle" : (infos.status == "playing" ? "En cours de lecture" : "En pause"),
-    buttons: [{
-      label: "Écouter",
-      url: `https://radio.lsdg.xyz/listen?m=${infos.id}`
-    }]
+function resolveImage(item, type){
+  let defaultPath = `${url}img/${type == "cover" ? "default_cover" : "default_logo_white"}.png`
+  if(!item.image) return defaultPath
+
+  if(type == "cover") {
+    return `${url}img/covers/${item.image.replace(".png", ".jpg")}`
+  } else if(type == "logo") {
+    return `${url}img/logos/${item.image}`
   }
 
-  if (infos.status != "paused") {
-    activity.startTimestamp = now - infos.timestamps.n
-    activity.endTimestamp = now - infos.timestamps.n + infos.timestamps.f
-  }
-
-  rpc.setActivity(activity);
-
-  console.log("RPC updated!")
+  return defaultPath
 }
 
-async function getTrackInfos() {
-  return await app.executeJavaScript(`
-q = {
-  id: parseInt(new URLSearchParams(location.search).get("m")),
-  track: document.getElementById("track-fullname").innerText,
-  timestamps: {
-    n: parseInt(document.querySelector('.current-time').dataset.currenttime),
-    f: parseInt(document.querySelector('.total-duration').dataset.duration)
-  },
-  status: document.querySelector('.fa-play-circle') ? "paused" : (document.querySelector(".loop-track").classList.contains("active") ? "loop" : "playing")
+function resolveName(item) {
+  return item.name.fr || item.name.en || item.name.original
 }
-q
-  `)
-}
-
-async function getStatus() {
-  return await app.executeJavaScript(`
-q = {
-  isLoop: document.querySelector(".loop-track").classList.contains("active"),
-  isPlaying: !document.querySelector('.fa-play-circle')
-}
-q
-`)
-}
-
-function reset() {
-  CONTROLSENABLED = false
-  rpc.clearActivity()
-  ipcRenderer.send('setSoundControls', [])
-}
-
-rpc.on('ready', () => {
-  setActivity();
-
-  setInterval(() => {
-    setActivity();
-  }, 15e3);
-});
-
-rpc.login({ clientId }).then(() => console.log("Logged in")).catch(console.error)
-
-ipcRenderer.on('soundControl', (event, arg) => {
-  console.log(`Received soundControl ${arg}`)
-  switch(arg) {
-    case "backward":
-      app.executeJavaScript(`$(".prev-track").click(); true`)
-      break
-    case "play":
-    case "pause":
-      app.executeJavaScript(`$(".playpause-track").click(); true`)
-      break
-    case "forward":
-      app.executeJavaScript(`$(".next-track").click(); true`)
-      break
-  }
-
-  return true
-})
-
-setInterval(async () => {
-  const title = await app.executeJavaScript(`document.title`)
-  document.title = `${title.replace("| LaRADIOdugaming", "- LaRADIOdugaming Client").trim()}`
-
-  let url = app.getAttribute("src")
-  if(url.startsWith("https://discord")) return reset()
-  
-  let path = "/" + url.split("/").slice(3).join("/")
-  if(!path.startsWith("/listen")) return reset()
-
-  const infos = await getStatus()
-  if(CONTROLSENABLED && CONTROLISPLAYING == infos.isPlaying) return
-  CONTROLSENABLED = true
-  CONTROLISPLAYING = infos.isPlaying
-  ipcRenderer.send('setSoundControls', [
-    { icon: `backward_${theme}.png`, c: "backward" },
-    { icon: `${infos.isPlaying ? "pause" : "play"}_${theme}.png`, c: infos.isPlaying ? "pause" : "play" },
-    { icon: `forward_${theme}.png`, c: "forward" },
-  ])
-}, 500)
