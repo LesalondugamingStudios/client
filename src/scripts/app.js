@@ -72,12 +72,12 @@ function shuffle(array) {
 async function landingPage() {
   setTitle("Accueil")
 
-  let franchises = shuffle(await ipcRenderer.invoke("api", "getFranchises")).slice(0, 10)
-  let holders = shuffle(await ipcRenderer.invoke("api", "getHolders")).slice(0, 10)
+  let franchises = shuffle(await ipcRenderer.invoke("api", "getFranchises"))
+  let holders = shuffle(await ipcRenderer.invoke("api", "getHolders"))
   let filters = await ipcRenderer.invoke("api", "getFilters")
 
   $("#main").html(`<div class="block">
-    <img class="avatar" src="${ user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512` : 'https://cdn.discordapp.com/embed/avatars/1.png' }" alt="avatar" />
+    <img class="avatar" src="${user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512` : 'https://cdn.discordapp.com/embed/avatars/1.png'}" alt="avatar" />
     <center><h3>Bienvenue, ${user.username}</h3></center>
   </div><br>
   
