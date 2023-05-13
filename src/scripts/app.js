@@ -1,4 +1,4 @@
-const { ipcRenderer } = require("electron")
+const { ipcRenderer, shell } = require("electron")
 const $ = require("jquery")
 const { version } = require("../../package.json")
 
@@ -7,7 +7,11 @@ const url = "https://radio.lsdg.xyz/"
 
 $("#version").html(version)
 
-const loadingText = "<br><br><br><br><center><h1>Chargement du client en cours ...</h1><p>Fun fact : Si le client crash, Creeper n'en sera pas tenu responsable.</p></center>"
+function showMessage(title, message) {
+  return `<br><br><br><br><center><h1>${title}</h1>${message ? `<p>${message}</p>` : ""}</center>`
+}
+
+const loadingText = showMessage("Chargement du client en cours ...", "Fun fact : Si le client crash, Creeper n'en sera pas tenu responsable.")
 let user
 
 function setTitle(title) {
@@ -17,10 +21,10 @@ function setTitle(title) {
 async function loadingScreen() {
   $("#main").html(loadingText)
   setTitle("Chargement du client")
-  await wait(1)
+  if(!user) await wait(1)
 
   let res = await fetch(url + "api/v1/")
-  if(!res.ok) return $("#main").html(`<br><br><br><br><center><h1>Une erreur est survenue. Veuillez vous assurer d'être connecté à Internet et vérifiez si le site fonctionne correctement.</h1><p>${res.status} ${res.statusText}</p></center>`)
+  if(!res.ok) return $("#main").html(showMessage("Une erreur est survenue. Veuillez vous assurer d'être connecté à Internet et vérifiez si le site fonctionne correctement.", `${res.status} ${res.statusText}`))
   let content = await res.json()
 
   if(content.deprecated) alert("Cette version du client est obselete.")
@@ -31,17 +35,13 @@ async function loadingScreen() {
 
   if(!loginData) {
     setTitle("Connexion à Discord")
-    const login = document.createElement('webview');
-
-    login.setAttribute("id", "app")
-    login.setAttribute("src", "http://localhost:62452/")
-
-    $("#main").html(login)
+    $("#main").html(showMessage("Connexion à Discord", "En attente de la connexion à votre compte.<br>La page de connexion a été ouverte dans votre navigateur."))
+    await shell.openExternal("http://localhost:62452/")
 
     let done = false
     while(!done) {
       await wait(2)
-      if(login.src.endsWith("/ok")) done = true
+      if(await ipcRenderer.invoke("login")) done = true
     }
   }
 
@@ -86,7 +86,21 @@ async function landingPage() {
     <div class="list">
       ${franchises.map(f => renderItem(f, "franchise")).join("<br>")}
     </div>
-  </div>
+  </div><br>
+
+  <div class="block">
+    <h1>Jeux et animes</h1>
+    <div class="list">
+      ${holders.map(h => renderItem(h, "holder")).join("<br>")}
+    </div>
+  </div><br>
+
+  <div class="block">
+    <h1>Tes filtres</h1>
+    <div class="music_list">
+      ${filters.map(f => renderTextItem(f, "filter")).join("<br>")}
+    </div>
+  </div><br>
     `)
 }
 
@@ -95,6 +109,14 @@ function renderItem(item, itemType) {
   <a class="${itemType}" data-id=${item.id}>
     <img class="cover" src="${resolveImage(item, "cover")}" alt="Cover image of ${resolveName(item)}">
     <p>${resolveName(item)}</p>
+  </a>
+</div>`
+}
+
+function renderTextItem(item, itemType) {
+  return `<div class="music_list_items">
+  <a class="${itemType}" data-id=${item.id}>
+    ${item.name.original ? resolveName(item) : item.name}
   </a>
 </div>`
 }

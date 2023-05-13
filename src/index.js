@@ -145,7 +145,7 @@ if (!singleInstanceLock && !process.env.DEV) {
     res.send({ ok: true })
   })
 
-  expressApp.get("/ok", (req, res) => res.send(`<style>body{font-family: "Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";color: #ffffff;}</style><br><br><br><br><center><h1>Connexion en cours, vous allez être redirigé ...</h1></center>`))
+  expressApp.get("/ok", (req, res) => res.send(`<style>body{font-family: "Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";color: #ffffff;background-color: #202124;}</style><br><br><br><br><center><h1>Vous êtes connecté. Vous pouvez fermer cette page.</h1></center>`))
 
   expressApp.listen(62452)
 }
