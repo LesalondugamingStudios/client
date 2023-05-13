@@ -5,6 +5,9 @@ const { version } = require("../../package.json")
 window.$ = $
 const url = "https://radio.lsdg.xyz/"
 
+const history = []
+var current = "loading"
+
 $("#version").html(version)
 
 function showMessage(title, message) {
@@ -16,6 +19,14 @@ let user
 
 function setTitle(title) {
   $("#title").html(title)
+}
+
+function setContent(html, title, idPage, fromHistory = false) {
+  setTitle(title)
+  $("#main").html(`<span id="gb"><i class="fa-thin fa-arrow-left"></i></span><script>$("#gb").off("click").on("click", historyHandler)</script>` + html)
+  current = idPage
+  window.scrollTo(0, 0)
+  if(!fromHistory) history.unshift({ title, html, idPage })
 }
 
 async function loadingScreen() {
@@ -30,8 +41,6 @@ async function loadingScreen() {
   if(content.deprecated) alert("Cette version du client est obselete.")
 
   let loginData = await ipcRenderer.invoke("login")
-
-  console.log(loginData)
 
   if(!loginData) {
     setTitle("Connexion à Discord")
@@ -70,13 +79,11 @@ function shuffle(array) {
 }
 
 async function landingPage() {
-  setTitle("Accueil")
-
   let franchises = shuffle(await ipcRenderer.invoke("api", "getFranchises"))
   let holders = shuffle(await ipcRenderer.invoke("api", "getHolders"))
   let filters = await ipcRenderer.invoke("api", "getFilters")
 
-  $("#main").html(`<div class="block">
+  setContent(`<div class="block">
     <img class="avatar" src="${user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512` : 'https://cdn.discordapp.com/embed/avatars/1.png'}" alt="avatar" />
     <center><h3>Bienvenue, ${user.username}</h3></center>
   </div><br>
@@ -101,7 +108,21 @@ async function landingPage() {
       ${filters.map(f => renderTextItem(f, "filter")).join("<br>")}
     </div>
   </div><br>
-    `)
+
+  <script src="../scripts/clickHandler.js"></script>
+    `, "Accueil", "landing")
+}
+
+async function itemPage(type, id) {
+  let q = await ipcRenderer.invoke("api", [`get${type.charAt(0).toUpperCase() + type.slice(1)}s`, `${id}`])
+  let holders = type == "franchise" ? await ipcRenderer.invoke("api", [`getFranchiseHolders`, `${id}`]) : []
+  let musics = type == "franchise" ? await ipcRenderer.invoke("api", [`getFranchiseMusics`, `${id}`]) :
+    type == "holder" ? await ipcRenderer.invoke("api", [`getHolderMusics`, `${id}`]) : []
+  
+  setContent(`<div class="block" style="text-align: center;">
+  <img class="logo" src="${resolveImage(q, "logo")}" alt="Logo image of ${resolveName(q)}">
+  <h1>${resolveName(q)} <i style="cursor: pointer;" class="fa fa-play-circle fa-1x"></i></h1>
+</div>` /*JSON.stringify({ data: q, holders, musics })*/, resolveName(q), `${type}/${id}`)
 }
 
 function renderItem(item, itemType) {
@@ -136,4 +157,11 @@ function resolveImage(item, type){
 
 function resolveName(item) {
   return item.name.fr || item.name.en || item.name.original
+}
+
+function historyHandler() {
+  if(!history.length || history.length == 1) return
+  console.log(history[0].idPage, current)
+  if(history[0].idPage == current) history.shift()
+  setContent(history[0].html, history[0].title, history[0].idPage, true)
 }

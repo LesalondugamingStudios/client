@@ -18,7 +18,9 @@ const PATH = {
 }
 
 class RadioAPI {
-  constructor() {}
+  constructor() {
+    this.cache = new Map()
+  }
 
   async getCurrentUser(sessionID) {
     return await this._fetch(PATH.CurrentUser, sessionID)
@@ -59,11 +61,15 @@ class RadioAPI {
   async _fetch(path, sessionID) {
     if(!sessionID) throw new TypeError("Session ID not provided")
 
+    let getCache = this.cache.get(path)
+    if(getCache && getCache.time + 600000 < Date.now()) return getCache.data
+
     let res = await fetch(api + path, { headers: { "Cookie": `sid=${encodeURIComponent(sessionID)}` } })
     let json = await res.json()
 
     if(!res.ok) throw new RadioAPIError(json.message)
 
+    this.cache.set(path, { data: json, time: Date.now() })
     return json
   }
 

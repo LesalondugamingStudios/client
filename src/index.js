@@ -103,9 +103,10 @@ if (!singleInstanceLock && !process.env.DEV) {
   })
 
   ipcMain.handle("api", async (event, args) => {
-    if(!api[args]) return false
+    console.log(args)
+    if(!api[typeof args == "string" ? args : args[0]]) return false
     if(!sessionID) return false
-    return await api[args](sessionID)
+    return await api[typeof args == "string" ? args : args[0]](sessionID, typeof args == "string" ? "" : args[1])
   })
 
   app.on('web-contents-created', (webContentsCreatedEvent, webContents) => {

@@ -17,6 +17,12 @@ html, body {
   height: 100%;
 }
 
+#gb {
+  font-size: small;
+  position: absolute;
+  top: 35px;
+}
+
 /* Content */
 .block {
   background-color: #121212;
