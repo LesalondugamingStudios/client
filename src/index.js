@@ -106,7 +106,13 @@ if (!singleInstanceLock && !process.env.DEV) {
     console.log(args)
     if(!api[typeof args == "string" ? args : args[0]]) return false
     if(!sessionID) return false
-    return await api[typeof args == "string" ? args : args[0]](sessionID, typeof args == "string" ? "" : args[1])
+
+    try {
+      return await api[typeof args == "string" ? args : args[0]](sessionID, typeof args == "string" ? "" : args[1])
+    } catch (err) {
+      console.error(err)
+      return { error: true, message: `${err.name}: ${err.message}`, html: err.html || `<p>${err.name}: ${err.message}</p>` }
+    }
   })
 
   app.on('web-contents-created', (webContentsCreatedEvent, webContents) => {

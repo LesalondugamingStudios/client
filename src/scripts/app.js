@@ -54,7 +54,7 @@ async function loadingScreen() {
     }
   }
 
-  user = await ipcRenderer.invoke("api", "getCurrentUser")
+  user = await callApi("getCurrentUser")
   landingPage()
 }
 
@@ -79,9 +79,9 @@ function shuffle(array) {
 }
 
 async function landingPage() {
-  let franchises = shuffle(await ipcRenderer.invoke("api", "getFranchises"))
-  let holders = shuffle(await ipcRenderer.invoke("api", "getHolders"))
-  let filters = await ipcRenderer.invoke("api", "getFilters")
+  let franchises = shuffle(await callApi("getFranchises"))
+  let holders = shuffle(await callApi("getHolders"))
+  let filters = await callApi("getFilters")
 
   setContent(`<div class="block">
     <img class="avatar" src="${user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512` : 'https://cdn.discordapp.com/embed/avatars/1.png'}" alt="avatar" />
@@ -114,10 +114,10 @@ async function landingPage() {
 }
 
 async function itemPage(type, id) {
-  let q = await ipcRenderer.invoke("api", [`get${type.charAt(0).toUpperCase() + type.slice(1)}s`, `${id}`])
-  let holders = type == "franchise" ? await ipcRenderer.invoke("api", [`getFranchiseHolders`, `${id}`]) : []
-  let musics = type == "franchise" ? await ipcRenderer.invoke("api", [`getFranchiseMusics`, `${id}`]) :
-    type == "holder" ? await ipcRenderer.invoke("api", [`getHolderMusics`, `${id}`]) : []
+  let q = await callApi([`get${type.charAt(0).toUpperCase() + type.slice(1)}s`, `${id}`])
+  let holders = type == "franchise" ? await callApi([`getFranchiseHolders`, `${id}`]) : []
+  let musics = type == "franchise" ? await callApi([`getFranchiseMusics`, `${id}`]) :
+    type == "holder" ? await callApi([`getHolderMusics`, `${id}`]) : []
   
   setContent(`<div class="block" style="text-align: center;">
   <img class="logo" src="${resolveImage(q, "logo")}" alt="Logo image of ${resolveName(q)}">
@@ -164,4 +164,13 @@ function historyHandler() {
   console.log(history[0].idPage, current)
   if(history[0].idPage == current) history.shift()
   setContent(history[0].html, history[0].title, history[0].idPage, true)
+}
+
+async function callApi(args) {
+  let res = await ipcRenderer.invoke("api", args)
+  if(!res.error) return res
+
+  $("#main").html(res.html)
+  setTitle(`Erreur ${res.message}`)
+  throw res.message
 }

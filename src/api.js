@@ -2,9 +2,11 @@ const { default: fetch } = require("node-fetch")
 const api = "https://radio.lsdg.xyz/api/v1/"
 
 class RadioAPIError extends Error {
-  constructor(message) {
+  constructor(message, html) {
     super(message)
     this.name = "RadioAPIError"
+
+    if(html) this.html = html
   }
 }
 
@@ -65,9 +67,12 @@ class RadioAPI {
     if(getCache && getCache.time + 600000 < Date.now()) return getCache.data
 
     let res = await fetch(api + path, { headers: { "Cookie": `sid=${encodeURIComponent(sessionID)}` } })
-    let json = await res.json()
+    let json, html
 
-    if(!res.ok) throw new RadioAPIError(json.message)
+    if(res.headers["Content-Type"] == "application/json") json = await res.json()
+    else html = await res.text()
+
+    if(!res.ok) throw new RadioAPIError(json?.message ?? `${res.status} ${res.statusText}`, html)
 
     this.cache.set(path, { data: json, time: Date.now() })
     return json

@@ -207,8 +207,7 @@ i.fa-pause-circle,
 i.fa-step-forward,
 i.fa-step-backward,
 i.fa-repeat-1,
-i.fa-arrows-rotate,
-p {
+i.fa-arrows-rotate {
   cursor: pointer;
 }
 
