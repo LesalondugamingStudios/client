@@ -147,9 +147,9 @@ function resolveImage(item, type){
   if(!item.image) return defaultPath
 
   if(type == "cover") {
-    return `${url}img/covers/${item.image.replace(".png", ".jpg")}`
+    return `${url}img/covers/${item._id}.jpg`
   } else if(type == "logo") {
-    return `${url}img/logos/${item.image}`
+    return `${url}img/logos/${item._id}.png`
   }
 
   return defaultPath

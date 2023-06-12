@@ -69,7 +69,7 @@ class RadioAPI {
     let res = await fetch(api + path, { headers: { "Cookie": `sid=${encodeURIComponent(sessionID)}` } })
     let json, html
 
-    if(res.headers["Content-Type"] == "application/json") json = await res.json()
+    if(res.headers.get("content-type").includes("application/json")) json = await res.json()
     else html = await res.text()
 
     if(!res.ok) throw new RadioAPIError(json?.message ?? `${res.status} ${res.statusText}`, html)
