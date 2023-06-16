@@ -16,6 +16,8 @@ main.appendChild(app)
 const clientId = '767777944096604241'
 const rpc = new DiscordRPC.Client({ transport: 'ipc' })
 
+let albumCoverList = ["1"]
+
 const theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? "light" : "dark"
 
 async function setActivity() {
@@ -33,9 +35,9 @@ async function setActivity() {
   let now = Date.now()
 
   let activity = {
-    details: "Écoute de la musique",
-    state: `${infos.track.replace("\n", " - ")}`,
-    largeImageKey: "large",
+    details: `${infos.track.replace("\n", " - ")}`,
+    state: `Par ${infos.composers || "Artiste inconnu"}`,
+    largeImageKey: infos.album && albumCoverList.includes(infos.album) ? `album_${infos.album}` : "large",
     largeImageText: `LaRADIOdugaming Client - v${version}`,
     smallImageKey: infos.status == "loop" ? "loop_light" : (infos.status == "playing" ? "play_light" : "pause_light"),
     smallImageText: infos.status == "loop" ? "Lecture en boucle" : (infos.status == "playing" ? "En cours de lecture" : "En pause"),
@@ -60,10 +62,12 @@ async function getTrackInfos() {
 q = {
   id: parseInt(new URLSearchParams(location.search).get("m")),
   track: document.getElementById("track-fullname").innerText,
+  composers: document.getElementById("track-composer").innerText,
   timestamps: {
     n: parseInt(document.querySelector('.current-time').dataset.currenttime),
     f: parseInt(document.querySelector('.total-duration').dataset.duration)
   },
+  album,
   status: document.querySelector('.fa-play-circle') ? "paused" : (document.querySelector(".loop-track").classList.contains("active") ? "loop" : "playing")
 }
 q
