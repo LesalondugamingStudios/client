@@ -16,7 +16,7 @@ main.appendChild(app)
 const clientId = '767777944096604241'
 const rpc = new DiscordRPC.Client({ transport: 'ipc' })
 
-let albumCoverList = ["1"]
+let albumCoverList = []
 
 const theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? "light" : "dark"
 
@@ -90,8 +90,9 @@ function reset() {
   ipcRenderer.send('setSoundControls', [])
 }
 
-rpc.on('ready', () => {
+rpc.on('ready', async () => {
   setActivity();
+  albumCoverList = await (await fetch("https://radio.lsdg.xyz/api/v1/c/albums")).json()
 
   setInterval(() => {
     setActivity();
