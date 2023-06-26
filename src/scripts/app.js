@@ -43,7 +43,7 @@ async function setActivity() {
     smallImageText: infos.status == "loop" ? "Lecture en boucle" : (infos.status == "playing" ? "En cours de lecture" : "En pause"),
     buttons: [{
       label: "Écouter",
-      url: `https://radio.lsdg.xyz/listen?m=${infos.id}`
+      url: `https://radio.lsdg.xyz/listen?m=${infos.id}${infos.album ? `&album=${infos.album}` : ""}`
     }]
   }
 
