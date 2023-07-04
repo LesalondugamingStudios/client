@@ -3,7 +3,9 @@ let CONTROLISPLAYING = false
 
 const DiscordRPC = require("discord-rpc")
 const { ipcRenderer } = require("electron")
+const WebSocket = require("ws")
 const { version } = require("../../package.json")
+const { readFileSync } = require("fs")
 
 const main = document.getElementById('main');
 const app = document.createElement('webview');
@@ -58,10 +60,16 @@ async function setActivity() {
 }
 
 async function getTrackInfos() {
+  let url = app.getAttribute("src")
+  let path = "/" + url.split("/").slice(3).join("/")
+
+  if(url.startsWith("https://discord") || !path.startsWith("/listen")) return null
+
   return await app.executeJavaScript(`
 q = {
   id: parseInt(new URLSearchParams(location.search).get("m")),
   track: document.getElementById("track-fullname").innerText,
+  source: currentMusic.sources[0].id,
   composers: document.getElementById("track-composer").innerText,
   timestamps: {
     n: parseInt(document.querySelector('.current-time').dataset.currenttime),
@@ -71,10 +79,15 @@ q = {
   status: document.querySelector('.fa-play-circle') ? "paused" : (document.querySelector(".loop-track").classList.contains("active") ? "loop" : "playing")
 }
 q
-  `)
+  `).catch(() => {})
 }
 
 async function getStatus() {
+  let url = app.getAttribute("src")
+  let path = "/" + url.split("/").slice(3).join("/")
+
+  if(url.startsWith("https://discord") && !path.startsWith("/listen")) return null
+
   return await app.executeJavaScript(`
 q = {
   isLoop: document.querySelector(".loop-track").classList.contains("active"),
@@ -86,20 +99,22 @@ q
 
 function reset() {
   CONTROLSENABLED = false
-  rpc.clearActivity()
+  if(JSON.parse(readFileSync("./config.json")).discordPresence) rpc.clearActivity()
   ipcRenderer.send('setSoundControls', [])
 }
 
-rpc.on('ready', async () => {
-  setActivity();
-  albumCoverList = await (await fetch("https://radio.lsdg.xyz/api/v1/c/albums")).json()
-
-  setInterval(() => {
+if(JSON.parse(readFileSync("./config.json")).discordPresence) {
+  rpc.on('ready', async () => {
     setActivity();
-  }, 15e3);
-});
+    albumCoverList = await (await fetch("https://radio.lsdg.xyz/api/v1/c/albums")).json()
 
-rpc.login({ clientId }).then(() => console.log("Logged in")).catch(console.error)
+    setInterval(() => {
+      setActivity();
+    }, 15e3);
+  });
+
+  rpc.login({ clientId }).then(() => console.log("Logged in")).catch(console.error)
+}
 
 ipcRenderer.on('soundControl', (event, arg) => {
   console.log(`Received soundControl ${arg}`)
@@ -139,3 +154,30 @@ setInterval(async () => {
     { icon: `forward_${theme}.png`, c: "forward" },
   ])
 }, 500)
+
+if(JSON.parse(readFileSync("./config.json")).websocketAPI) {
+  const wss = new WebSocket.WebSocketServer({ port: 5081 });
+
+  wss.on('connection', function(ws) {
+    console.log("New Client")
+    ws.on('error', console.error);
+
+    ws.on('message', data => {
+      console.log(data)
+    })
+
+    ws.send(JSON.stringify({ type: "handshake", message: "complete" }))
+  });
+
+  wss.on("error", console.error)
+
+  setInterval(async () => {
+    let infos = await getTrackInfos().catch(() => {})
+
+    wss.clients.forEach(client => {
+      if(client.readyState == WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: "musicListen", data: infos ? infos : null }))
+      }
+    })
+  }, 1000)
+}

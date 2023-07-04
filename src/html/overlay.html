@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>overlay</title>
+  <style>
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body style="margin: 0; -webkit-user-select: none; -webkit-app-region: drag;"><canvas id="canvas"></canvas><script>
+    const connection = new WebSocket("ws://localhost:5081")
+    /**
+     * @type {HTMLCanvasElement}
+     */
+    const canvas = document.getElementById("canvas")
+    const ctx = canvas.getContext('2d')
+
+    const imageMap = new Map()
+
+    const playing = new Image()
+    playing.src = "../assets/play_light.png"
+
+    const paused = new Image()
+    paused.src = "../assets/pause_light.png"
+
+    async function drawMusic(infos, error) {
+      canvas.width = window.innerWidth
+      canvas.height = Math.floor(window.innerWidth / 3)
+      document.body.style.height = `${canvas.height}px`
+
+      ctx.fillStyle = "#121212"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      if(!infos) {
+        ctx.font = "20px Verdana"
+        ctx.fillStyle = "red"
+        ctx.textAlign = "center"
+
+        if(error) {
+          ctx.fillText("La connexion avec le WebSocket a été interrompue.", canvas.width / 2, 25)
+          ctx.fillText(error, canvas.width / 2, 65)
+        }
+        else ctx.fillText("Le lecteur est inactif", canvas.width / 2, 25)
+
+        return
+      }
+
+      await drawImage(infos.source)
+
+      let startPoint = 5 + ((canvas.height - 10) / 1.5) + 5,
+          endPoint = canvas.width - 5,
+          middlePoint = (startPoint + endPoint) / 2,
+          size = endPoint - startPoint
+
+      ctx.font = "20px Verdana"
+      ctx.fillStyle = "#FFFFFF"
+      ctx.textAlign = "center"
+      drawText(infos.track.split("\n")[0], middlePoint, 20, size)
+
+      ctx.font = "17px Verdana"
+      drawText(infos.track.split("\n")[1], middlePoint, 45, size)
+
+      ctx.font = "14px Verdana"
+      drawText(infos.composers, middlePoint, 68, size)
+
+      if(canvas.width >= 333) {
+        ctx.fillStyle = "#404040"
+        ctx.beginPath()
+        ctx.roundRect(startPoint, canvas.height - 10 - 10, size, 10, 5)
+        ctx.fill()
+
+        ctx.fillStyle = "green"
+        ctx.beginPath()
+        ctx.roundRect(startPoint, canvas.height - 10 - 10, size * infos.timestamps.n / infos.timestamps.f, 10, 5)
+        ctx.fill()
+      }
+
+      let currentMinutes = Math.floor(infos.timestamps.n / 1000 / 60);
+      let currentSeconds = Math.floor(infos.timestamps.n / 1000 - currentMinutes * 60);
+      let durationMinutes = Math.floor(infos.timestamps.f / 1000 / 60);
+      let durationSeconds = Math.floor(infos.timestamps.f / 1000 - durationMinutes * 60);
+
+      if(currentSeconds < 10) { currentSeconds = "0" + currentSeconds; };
+      if(durationSeconds < 10) { durationSeconds = "0" + durationSeconds; };
+      if(currentMinutes < 10) { currentMinutes = "0" + currentMinutes; };
+      if(durationMinutes < 10) { durationMinutes = "0" + durationMinutes; };
+
+      ctx.fillStyle = "#FFFFFF"
+      if(canvas.width >= 400) ctx.fillText(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`, middlePoint, canvas.height - 10 - 10 - 10)
+
+      if(canvas.width >= 530) ctx.drawImage(infos.status == "paused" ? paused : playing, middlePoint - (40 / 2), canvas.height - 10 - 10 - 10 - 17 - 40, 40, 40)
+    }
+
+    function drawImage(id) {
+      return new Promise((resolve, reject) => {
+        let savedImage = imageMap.get(id)
+        if(!savedImage) {
+          let img =  new Image()
+          img.src = `https://radio.lsdg.xyz/api/v1/holders/${id}/cover`
+          imageMap.set(id, img)
+          img.onload = function() {
+            ctx.drawImage(img, 5, 5, (canvas.height - 10) / 1.5, canvas.height - 10)
+            resolve(true)
+          }
+          img.onerror = function() {
+            reject(false)
+          }
+        } else {
+          ctx.drawImage(savedImage, 5, 5, (canvas.height - 10) / 1.5, canvas.height - 10)
+          resolve(true)
+        }
+      })
+    }
+
+    function drawText(text, x, y, size) {
+      let metrics = ctx.measureText(text)
+      if(metrics.width <= size) return ctx.fillText(text, x, y)
+
+      while(metrics.width > size && text) {
+        text = text.slice(0, -1)
+        metrics = ctx.measureText(text + "…")
+      }
+
+      ctx.fillText(text + "…", x, y)
+    }
+
+    connection.addEventListener('open', function (event) {
+      connection.send(JSON.stringify({ type: "handshake", message: "Coucou !" }))
+    });
+
+    connection.addEventListener('message', function (event) {
+      let data = JSON.parse(event.data)
+      if(data.type == "musicListen") {
+        drawMusic(data.data)
+      }
+    });
+
+    connection.addEventListener('close', function(event){
+      drawMusic(null, "Connexion impossible")
+    })
+  </script></body>
+</html>

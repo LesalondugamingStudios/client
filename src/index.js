@@ -1,8 +1,9 @@
-const { app, BrowserWindow, Menu, shell, Tray, ipcMain, globalShortcut } = require('electron')
+const { app, BrowserWindow, Menu, shell, Tray, ipcMain } = require('electron')
 const log = require("electron-log")
 const { autoUpdater } = require("electron-updater")
 const path = require("path")
 const { version } = require("../package.json")
+const { readFileSync } = require("fs")
 require("dotenv").config()
 
 autoUpdater.logger = log;
@@ -11,6 +12,16 @@ autoUpdater.logger = log;
  * @type {BrowserWindow | undefined}
  */
 let mainWindow
+
+/**
+ * @type {Tray | undefined}
+ */
+let tray
+
+/**
+ * @type {BrowserWindow | undefined}
+ */
+let overlayWindow
 
 async function createWindow() {
   mainWindow = new BrowserWindow({
@@ -33,19 +44,48 @@ async function createWindow() {
     }
   })
 
-  const ctxMenu = Menu.buildFromTemplate([
+  tray = new Tray(process.env.DEV ? "./src/assets/icon.png" : path.join(process.resourcesPath, "icon.png"))
+  tray.setToolTip("LaRADIOdugaming Client")
+  tray.setContextMenu(createMenuTemplate())
+  tray.on("click", () => mainWindow.show())
+}
+
+function createOverlayWindow() {
+  tray.setContextMenu(createMenuTemplate(false))
+
+  overlayWindow = new BrowserWindow({
+    minWidth: 381,
+    minHeight: 127,
+    maxWidth: 603,
+    maxHeight: 201,
+    alwaysOnTop: true,
+    transparent: true,
+    frame: false,
+    skipTaskbar: true
+  })
+
+  overlayWindow.setAspectRatio(3.0)
+  if(!process.env.DEV) overlayWindow.removeMenu()
+  overlayWindow.loadFile("./src/html/overlay.html")
+}
+
+function closeOverlay() {
+  tray.setContextMenu(createMenuTemplate(true))
+  overlayWindow.destroy()
+  overlayWindow = undefined
+}
+
+function createMenuTemplate(activateOverlay = true) {
+  return Menu.buildFromTemplate([
     { label: `LaRADIOdugaming Client v${version}`, enabled: false },
     { label: "Site", click: async () => {
       await shell.openExternal("https://radio.lsdg.xyz/")
     } },
     { type: "separator" },
+    { label: `${activateOverlay ? "Ouvrir" : "Fermer"} l'overlay`, click: activateOverlay ? createOverlayWindow : closeOverlay },
+    { label: "Paramètres", click: () => shell.openPath("config.json") },
     { label: "Quitter", click: () => app.quit() }
   ])
-
-  const tray = new Tray(process.env.DEV ? "./src/assets/icon.png" : path.join(process.resourcesPath, "icon.png"))
-  tray.setToolTip("LaRADIOdugaming Client")
-  tray.setContextMenu(ctxMenu)
-  tray.on("click", () => mainWindow.show())
 }
 
 const singleInstanceLock = app.requestSingleInstanceLock();
