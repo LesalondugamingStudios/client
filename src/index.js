@@ -32,6 +32,8 @@ async function createWindow() {
     }
   })
 
+  mainWindow.setTitle("LaRADIOdugaming Client")
+
   if(process.env.DEV) mainWindow.setIcon("./src/assets/icon.png")
   if(!process.env.DEV) mainWindow.removeMenu()
 
@@ -58,15 +60,20 @@ function createOverlayWindow() {
     minHeight: 127,
     maxWidth: 603,
     maxHeight: 201,
-    alwaysOnTop: true,
-    transparent: true,
     frame: false,
+    minimizable: false,
+    maximizable: false,
     skipTaskbar: true
   })
 
+  overlayWindow.setAlwaysOnTop(true, "floating")
   overlayWindow.setAspectRatio(3.0)
   if(!process.env.DEV) overlayWindow.removeMenu()
   overlayWindow.loadFile("./src/html/overlay.html")
+
+  overlayWindow.once("closed", () => {
+    closeOverlay()
+  })
 }
 
 function closeOverlay() {
@@ -122,7 +129,6 @@ if (!singleInstanceLock && !process.env.DEV) {
   app.on('web-contents-created', (webContentsCreatedEvent, webContents) => {
     webContents.on('before-input-event', (beforeInputEvent, input) => {
       const { code, alt, control, meta } = input
-      // Shortcut: toggle devTools
       if (!process.env.DEV && control && !alt && !meta && code === 'KeyR') {
         BrowserWindow.getFocusedWindow().reload()
       }
