@@ -1,6 +1,6 @@
 {
   "name": "laradiodugaming-client",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Le client officiel de LaRADIOdugaming.",
   "main": "src/index.js",
   "scripts": {
@@ -11,14 +11,14 @@
   "author": "Creeper",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^25.2.0",
-    "electron-builder": "^24.5.2"
+    "electron": "^25.3.0",
+    "electron-builder": "^24.6.1"
   },
   "dependencies": {
     "discord-rpc": "^4.0.1",
     "dotenv": "^16.3.1",
     "electron-log": "^4.4.8",
-    "electron-updater": "^5.3.0",
+    "electron-updater": "^6.1.1",
     "ws": "^8.13.0"
   },
   "build": {

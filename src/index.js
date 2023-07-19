@@ -3,7 +3,6 @@ const log = require("electron-log")
 const { autoUpdater } = require("electron-updater")
 const path = require("path")
 const { version } = require("../package.json")
-const { readFileSync } = require("fs")
 require("dotenv").config()
 
 autoUpdater.logger = log;
@@ -127,10 +126,22 @@ if (!singleInstanceLock && !process.env.DEV) {
   })
 
   app.on('web-contents-created', (webContentsCreatedEvent, webContents) => {
+    webContents.setWindowOpenHandler(({ url }) => {
+      shell.openExternal(url)
+      return { action: "deny" }
+    })
+
     webContents.on('before-input-event', (beforeInputEvent, input) => {
-      const { code, alt, control, meta } = input
-      if (!process.env.DEV && control && !alt && !meta && code === 'KeyR') {
+      const { alt, control, meta, key } = input
+      if (!process.env.DEV && control && !alt && !meta && key === 'r') {
         BrowserWindow.getFocusedWindow().reload()
+      }
+
+      if ((control && !alt && !meta && key === 'z') || (!control && alt && !meta && key === 'ArrowLeft')) {
+        mainWindow.webContents.send("historyControl", "undo")
+      }
+      if ((control && !alt && !meta && key === 'y') || (!control && alt && !meta && key === 'ArrowRight')) {
+        mainWindow.webContents.send("historyControl", "redo")
       }
     })
   })

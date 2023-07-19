@@ -18,8 +18,6 @@ main.appendChild(app)
 const clientId = '767777944096604241'
 const rpc = new DiscordRPC.Client({ transport: 'ipc' })
 
-let albumCoverList = []
-
 const theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? "light" : "dark"
 
 async function setActivity() {
@@ -39,7 +37,7 @@ async function setActivity() {
   let activity = {
     details: `${infos.track.replace("\n", " - ")}`,
     state: `Par ${infos.composers || "Artiste inconnu"}`,
-    largeImageKey: infos.album && albumCoverList.includes(infos.album) ? `album_${infos.album}` : "large",
+    largeImageKey: infos.album ? `https://radio.lsdg.xyz/api/v1/albums/${infos.album}/cover` : "large",
     largeImageText: `LaRADIOdugaming Client - v${version}`,
     smallImageKey: infos.status == "loop" ? "loop_light" : (infos.status == "playing" ? "play_light" : "pause_light"),
     smallImageText: infos.status == "loop" ? "Lecture en boucle" : (infos.status == "playing" ? "En cours de lecture" : "En pause"),
@@ -103,10 +101,10 @@ function reset() {
   ipcRenderer.send('setSoundControls', [])
 }
 
+// Discord RPC
 if(JSON.parse(readFileSync("./config.json")).discordPresence) {
   rpc.on('ready', async () => {
     setActivity();
-    albumCoverList = await (await fetch("https://radio.lsdg.xyz/api/v1/c/albums")).json()
 
     setInterval(() => {
       setActivity();
@@ -116,6 +114,7 @@ if(JSON.parse(readFileSync("./config.json")).discordPresence) {
   rpc.login({ clientId }).then(() => console.log("Logged in")).catch(console.error)
 }
 
+// Sound Control Events
 ipcRenderer.on('soundControl', (event, arg) => {
   console.log(`Received soundControl ${arg}`)
   switch(arg) {
@@ -134,6 +133,13 @@ ipcRenderer.on('soundControl', (event, arg) => {
   return true
 })
 
+// Control for history (Ctrl+Z)
+ipcRenderer.on('historyControl', (event, arg) => {
+  if(arg == "undo") app.executeJavaScript(`history.back()`)
+  if(arg == "redo") app.executeJavaScript(`history.forward()`)
+})
+
+// Loop
 setInterval(async () => {
   const title = await app.executeJavaScript(`document.title`)
   document.title = `${title.replace("| LaRADIOdugaming", "- LaRADIOdugaming Client").trim()}`
@@ -155,6 +161,7 @@ setInterval(async () => {
   ])
 }, 500)
 
+// Websocket
 if(JSON.parse(readFileSync("./config.json")).websocketAPI) {
   const wss = new WebSocket.WebSocketServer({ port: 5081 });
 

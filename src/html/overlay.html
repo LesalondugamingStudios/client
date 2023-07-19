@@ -89,7 +89,7 @@
       if(durationMinutes < 10) { durationMinutes = "0" + durationMinutes; };
 
       ctx.fillStyle = "#FFFFFF"
-      if(canvas.width >= 400) ctx.fillText(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`, middlePoint, canvas.height - 10 - 10 - 10)
+      if(canvas.width >= 380) ctx.fillText(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`, middlePoint, canvas.height - 10 - 10 - 10)
 
       if(canvas.width >= 530) ctx.drawImage(infos.status == "paused" ? paused : playing, middlePoint - (40 / 2), canvas.height - 10 - 10 - 10 - 17 - 40, 40, 40)
     }
