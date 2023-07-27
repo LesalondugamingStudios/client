@@ -11,14 +11,14 @@
   "author": "Creeper",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^25.3.0",
-    "electron-builder": "^24.6.1"
+    "electron": "^25.3.2",
+    "electron-builder": "^24.6.3"
   },
   "dependencies": {
     "discord-rpc": "^4.0.1",
     "dotenv": "^16.3.1",
     "electron-log": "^4.4.8",
-    "electron-updater": "^6.1.1",
+    "electron-updater": "^6.1.4",
     "ws": "^8.13.0"
   },
   "build": {
